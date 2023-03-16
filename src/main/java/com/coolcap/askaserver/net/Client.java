@@ -39,6 +39,8 @@ public class Client
 			return;
 		}
 
+		if (request.isEmpty()) return;
+
 		switch (request.names().getString(0))
 		{
 			case "auth":
@@ -46,7 +48,7 @@ public class Client
 					Auth.Execute(this, request.getString("auth"));
 				break;
 			case "create":
-				if (room == null)
+				if (isAuth && room == null)
 				{
 					String quiz = request.getString("create");
 

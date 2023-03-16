@@ -12,10 +12,10 @@ public class Auth
 			return;
 		}
 
-		client.isAuth = true;
-		client.name = name;
+		client.setAuth(true);
+		client.setName(name);
 		client.send("authResult", "OK");
 
-		System.out.println(((InetSocketAddress)client.socket.getRemoteSocketAddress()).getAddress().getHostAddress() + " authed as " + name);
+		System.out.println(((InetSocketAddress)client.getSocket().getRemoteSocketAddress()).getAddress().getHostAddress() + " authed as " + name);
 	}
 }

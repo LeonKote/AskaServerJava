@@ -1,11 +1,11 @@
 package com.coolcap.askaserver.net;
 
 import com.coolcap.askaserver.Server;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Room
 {
@@ -21,34 +21,35 @@ public class Room
 
 	public void onClientJoin(Client client)
 	{
-		client.room = this;
+		client.setRoom(this);
 
 		for (Client roomClient : clients.values())
 		{
-			roomClient.send("clientJoin", new JSONObject(client));
+			roomClient.send("clientJoin", new JSONObject(client.getInfo()));
 		}
 
-		clients.put(client.id, client);
+		clients.put(client.getId(), client);
 
-		client.send("roomJoin", new JSONObject().put("code", code).put("clients", new JSONArray(clients.values())));
+		client.send("roomJoin", new JSONObject().put("code", code).put("clients",
+				clients.values().stream().map(Client::getInfo).collect(Collectors.toList())));
 		onClientMessage(0, client.getName() + " entered the room");
 	}
 
 	public void onClientLeave(Client client)
 	{
-		client.room = null;
+		client.setRoom(null);
 
 		if (clients.size() == 1)
 		{
-			Server.rooms.remove(code);
+			Server.getRooms().remove(code);
 			return;
 		}
 
-		clients.remove(client.id);
+		clients.remove(client.getId());
 
 		for (Client roomClient : clients.values())
 		{
-			roomClient.send("clientLeave", new JSONObject(client));
+			roomClient.send("clientLeave", new JSONObject(client.getInfo()));
 		}
 		onClientMessage(0, client.getName() + " has left the room!");
 	}

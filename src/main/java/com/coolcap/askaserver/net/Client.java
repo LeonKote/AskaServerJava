@@ -8,23 +8,22 @@ import org.json.JSONObject;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import static com.coolcap.askaserver.Server.rooms;
+import static com.coolcap.askaserver.Server.getRooms;
 
 public class Client
 {
-	public final ClientThread thread;
-	public final Socket socket;
-	public final int id;
-	public boolean isAuth;
-	public String name;
-	public Room room;
+	private final ClientThread thread;
+	private final Socket socket;
+	private final ClientInfo info;
+	private boolean isAuth;
+	private Room room;
 
 	public Client(ClientThread thread, Socket socket)
 	{
 		this.thread = thread;
 		this.socket = socket;
 
-		id = Utils.randomRange(1, Integer.MAX_VALUE);
+		info = new ClientInfo(Utils.randomRange(1, Integer.MAX_VALUE));
 	}
 
 	public void onMessage(String message)
@@ -50,13 +49,13 @@ public class Client
 				{
 					int code = Utils.randomRange(100000, 1000000);
 					Room room = new Room(code, this);
-					rooms.put(code, room);
+					getRooms().put(code, room);
 				}
 				break;
 			case "join":
 				if (isAuth && request.get("join") instanceof Integer
-						&& rooms.containsKey(request.getInt("join")))
-					rooms.get(request.getInt("join")).onClientJoin(this);
+						&& getRooms().containsKey(request.getInt("join")))
+					getRooms().get(request.getInt("join")).onClientJoin(this);
 				break;
 			case "leave":
 				if (room != null)
@@ -64,7 +63,7 @@ public class Client
 				break;
 			case "message":
 				if (room != null)
-					room.onClientMessage(id, request.getString("message"));
+					room.onClientMessage(getId(), request.getString("message"));
 				break;
 		}
 		System.out.println(getName() + ": " + message);
@@ -88,16 +87,41 @@ public class Client
 		thread.send(new JSONObject().put(key, value).toString());
 	}
 
+	public Socket getSocket()
+	{
+		return socket;
+	}
+
 	public int getId()
 	{
-		return id;
+		return info.getId();
 	}
 
 	public String getName()
 	{
-		if (name == null)
+		if (info.getName() == null)
 			return ((InetSocketAddress)socket.getRemoteSocketAddress()).getAddress().getHostAddress();
 		else
-			return name;
+			return info.getName();
+	}
+
+	public void setName(String name)
+	{
+		info.setName(name);
+	}
+
+	public ClientInfo getInfo()
+	{
+		return info;
+	}
+
+	public void setAuth(boolean auth)
+	{
+		isAuth = auth;
+	}
+
+	public void setRoom(Room room)
+	{
+		this.room = room;
 	}
 }

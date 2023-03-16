@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class Server extends ServerSocket
 {
-	public static Map<Integer, Room> rooms = new HashMap<>();
+	private static Map<Integer, Room> rooms = new HashMap<>();
 
 	public Server(int port) throws IOException
 	{
@@ -23,5 +23,10 @@ public class Server extends ServerSocket
 			Socket socket = this.accept();
 			new ClientThread(socket).start();
 		}
+	}
+
+	public static Map<Integer, Room> getRooms()
+	{
+		return rooms;
 	}
 }

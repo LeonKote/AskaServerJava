@@ -1,4 +1,4 @@
-package com.coolcap.askaserver;
+package com.coolcap.askaserver.threads;
 
 import com.coolcap.askaserver.net.Client;
 

@@ -1,6 +1,6 @@
 package com.coolcap.askaserver.net;
 
-import com.coolcap.askaserver.ClientThread;
+import com.coolcap.askaserver.threads.ClientThread;
 import com.coolcap.askaserver.Utils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -8,23 +8,23 @@ import org.json.JSONObject;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import static com.coolcap.askaserver.Server.rooms;
+import static com.coolcap.askaserver.Server.getQuizzes;
+import static com.coolcap.askaserver.Server.getRooms;
 
 public class Client
 {
-	public final ClientThread thread;
-	public final Socket socket;
-	public final int id;
-	public boolean isAuth;
-	public String name;
-	public Room room;
+	private final ClientThread thread;
+	private final Socket socket;
+	private final ClientInfo info;
+	private boolean isAuth;
+	private Room room;
 
 	public Client(ClientThread thread, Socket socket)
 	{
 		this.thread = thread;
 		this.socket = socket;
 
-		id = Utils.randomRange(1, Integer.MAX_VALUE);
+		info = new ClientInfo(Utils.randomRange(1, Integer.MAX_VALUE));
 	}
 
 	public void onMessage(String message)
@@ -39,6 +39,8 @@ public class Client
 			return;
 		}
 
+		if (request.isEmpty()) return;
+
 		switch (request.names().getString(0))
 		{
 			case "auth":
@@ -46,25 +48,38 @@ public class Client
 					Auth.Execute(this, request.getString("auth"));
 				break;
 			case "create":
-				if (room == null)
+				if (isAuth && room == null)
 				{
-					int code = Utils.randomRange(100000, 1000000);
-					Room room = new Room(code, this);
-					rooms.put(code, room);
+					String quiz = request.getString("create");
+
+					if (getQuizzes().containsKey(quiz))
+					{
+						int code = Utils.randomRange(100000, 1000000);
+						Room room = new Room(code, getQuizzes().get(quiz), this);
+						getRooms().put(code, room);
+					}
 				}
 				break;
 			case "join":
 				if (isAuth && request.get("join") instanceof Integer
-						&& rooms.containsKey(request.getInt("join")))
-					rooms.get(request.getInt("join")).onClientJoin(this);
+						&& getRooms().containsKey(request.getInt("join")))
+				{
+					Room room = getRooms().get(request.getInt("join"));
+					if (!room.isStarted())
+						room.onClientJoin(this);
+				}
 				break;
 			case "leave":
 				if (room != null)
 					room.onClientLeave(this);
 				break;
-			case "message":
+			case "start":
 				if (room != null)
-					room.onClientMessage(id, request.getString("message"));
+					room.onGameStarted(this);
+				break;
+			case "answer":
+				if (room != null)
+					room.onAnswer(this, request.getInt("answer"));
 				break;
 		}
 		System.out.println(getName() + ": " + message);
@@ -85,19 +100,50 @@ public class Client
 
 	public void send(String key, Object value)
 	{
+		if (value == null) value = JSONObject.NULL;
 		thread.send(new JSONObject().put(key, value).toString());
+	}
+
+	public Socket getSocket()
+	{
+		return socket;
 	}
 
 	public int getId()
 	{
-		return id;
+		return info.getId();
 	}
 
 	public String getName()
 	{
-		if (name == null)
+		if (info.getName() == null)
 			return ((InetSocketAddress)socket.getRemoteSocketAddress()).getAddress().getHostAddress();
 		else
-			return name;
+			return info.getName();
+	}
+
+	public void setName(String name)
+	{
+		info.setName(name);
+	}
+
+	public ClientInfo getInfo()
+	{
+		return info;
+	}
+
+	public void setAuth(boolean auth)
+	{
+		isAuth = auth;
+	}
+
+	public void setRoom(Room room)
+	{
+		this.room = room;
+	}
+
+	public boolean isHost()
+	{
+		return room.getHost() == this;
 	}
 }

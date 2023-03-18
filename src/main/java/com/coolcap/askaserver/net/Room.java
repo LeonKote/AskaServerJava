@@ -1,63 +1,100 @@
 package com.coolcap.askaserver.net;
 
+import com.coolcap.askaserver.threads.GameThread;
 import com.coolcap.askaserver.Server;
-import org.json.JSONArray;
+import com.coolcap.askaserver.quiz.Quiz;
 import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Room
 {
-	public Map<Integer, Client> clients = new HashMap<>();
-	public int code;
+	private final Map<Integer, Client> clients = new HashMap<>();
+	private final int code;
+	private final Quiz quiz;
+	private final Client host;
+	private final GameThread gameThread;
 
-	public Room(int code, Client client)
+	private boolean isStarted;
+
+	public Room(int code, Quiz quiz, Client client)
 	{
 		this.code = code;
+		this.quiz = quiz;
+		this.host = client;
+
+		gameThread = new GameThread(this, quiz);
 
 		onClientJoin(client);
 	}
 
 	public void onClientJoin(Client client)
 	{
-		client.room = this;
+		client.setRoom(this);
 
-		for (Client roomClient : clients.values())
-		{
-			roomClient.send("clientJoin", new JSONObject(client));
-		}
+		broadcast("clientJoin", new JSONObject(client.getInfo()));
 
-		clients.put(client.id, client);
+		clients.put(client.getId(), client);
 
-		client.send("roomJoin", new JSONObject().put("code", code).put("clients", new JSONArray(clients.values())));
-		onClientMessage(0, client.getName() + " entered the room");
+		client.send("roomJoin", new JSONObject().put("code", code).put("quiz", quiz.getName()).put("clients",
+				clients.values().stream().map(Client::getInfo).collect(Collectors.toList())));
 	}
 
 	public void onClientLeave(Client client)
 	{
-		client.room = null;
+		client.setRoom(null);
 
 		if (clients.size() == 1)
 		{
-			Server.rooms.remove(code);
+			Server.getRooms().remove(code);
 			return;
 		}
 
-		clients.remove(client.id);
+		clients.remove(client.getId());
 
-		for (Client roomClient : clients.values())
-		{
-			roomClient.send("clientLeave", new JSONObject(client));
-		}
-		onClientMessage(0, client.getName() + " has left the room!");
+		broadcast("clientLeave", new JSONObject(client.getInfo()));
 	}
 
-	public void onClientMessage(int id, String text)
+	public void onGameStarted(Client client)
+	{
+		if (!client.isHost()) return;
+
+		isStarted = true;
+		gameThread.start();
+	}
+
+	public void onAnswer(Client client, int id)
+	{
+		gameThread.onAnswer(client, id);
+	}
+
+	public void broadcast(String key)
+	{
+		broadcast(key, null);
+	}
+
+	public void broadcast(String key, Object value)
 	{
 		for (Client roomClient : clients.values())
 		{
-			roomClient.send("clientMessage", new JSONObject().put("id", id).put("text", text));
+			roomClient.send(key, value);
 		}
+	}
+
+	public Map<Integer, Client> getClients()
+	{
+		return clients;
+	}
+
+	public Client getHost()
+	{
+		return host;
+	}
+
+	public boolean isStarted()
+	{
+		return isStarted;
 	}
 }

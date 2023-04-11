@@ -14,17 +14,19 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class Server extends ServerSocket
 {
-	private static Map<Integer, Room> rooms;
+	private static ConcurrentMap<Integer, Room> rooms;
 	private static Map<String, Quiz> quizzes;
 
 	public Server(int port) throws IOException
 	{
 		super(port);
 
-		rooms = new HashMap<>();
+		rooms = new ConcurrentHashMap<>();
 		quizzes = new HashMap<>();
 
 		File quizzesFolder = new File("quizzes");

@@ -16,8 +16,8 @@ public class GameThread extends Thread
 {
 	private final Room room;
 	private final GameQuiz gameQuiz;
-	private final Map<Integer, Integer> globalScore;
-	private final Set<Client> answers;
+	private final Map<Integer, Integer> globalScore = new HashMap<>();
+	private final Set<Client> answers = new HashSet<>();
 
 	private QuizQuestion currentQuestion;
 	private boolean isAnswerAllowed;
@@ -26,9 +26,7 @@ public class GameThread extends Thread
 	public GameThread(Room room, Quiz quiz)
 	{
 		this.room = room;
-		gameQuiz = new GameQuiz(quiz);
-		globalScore = new HashMap<>();
-		answers = new HashSet<>();
+		this.gameQuiz = new GameQuiz(quiz);
 	}
 
 	@Override
@@ -39,18 +37,18 @@ public class GameThread extends Thread
 			globalScore.put(client.getId(), 0);
 		}
 
-		room.broadcast("gameStarted");
+		room.broadcast("gameStarted", new JSONObject().put("name", gameQuiz.getName()));
 		wait(3000);
 
 		room.broadcast("startTimer");
-		wait(4000);
+		wait(3000);
 
 		while (gameQuiz.getQuestionCount() > 0)
 		{
 			currentQuestion = gameQuiz.getNextQuestion();
 			room.broadcast("roundStarted", new JSONObject(currentQuestion));
 
-			wait(3000);
+			wait(currentQuestion.getCountdown() * 1000);
 
 			isAnswerAllowed = true;
 			answerStartTime = System.currentTimeMillis();

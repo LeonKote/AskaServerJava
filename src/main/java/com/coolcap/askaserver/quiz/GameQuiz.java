@@ -4,11 +4,12 @@ import java.util.*;
 
 public class GameQuiz
 {
-	private final Queue<QuizQuestion> questions;
+	private final String name;
+	private final Queue<QuizQuestion> questions = new LinkedList<>();
 
 	public GameQuiz(Quiz quiz)
 	{
-		questions = new LinkedList<>();
+		this.name = quiz.getName();
 		for (QuizQuestion q : quiz.getQuestions())
 		{
 			QuizQuestion question = new QuizQuestion(q);
@@ -16,6 +17,11 @@ public class GameQuiz
 			questions.add(question);
 		}
 		Collections.shuffle((List<?>) questions);
+	}
+
+	public String getName()
+	{
+		return name;
 	}
 
 	public QuizQuestion getNextQuestion()

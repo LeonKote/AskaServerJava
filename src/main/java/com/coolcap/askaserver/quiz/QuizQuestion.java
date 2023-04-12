@@ -7,14 +7,14 @@ import java.util.List;
 public class QuizQuestion
 {
 	private String question;
-	private List<String> answers;
+	private List<String> answers = new ArrayList<>();
 	private String image;
 	private int time;
+	private int countdown;
 	private int rightAnswer;
 
 	public QuizQuestion()
 	{
-		answers = new ArrayList<>();
 		time = 30;
 	}
 
@@ -24,6 +24,7 @@ public class QuizQuestion
 		this.answers = new ArrayList<>(question.answers);
 		this.image = question.image;
 		this.time = question.time;
+		this.countdown = question.countdown;
 		this.rightAnswer = question.rightAnswer;
 	}
 
@@ -49,6 +50,7 @@ public class QuizQuestion
 	public void setQuestion(String question)
 	{
 		this.question = question;
+		this.countdown = Math.max((int) (question.length() * 0.075f), 3);
 	}
 
 	public List<String> getAnswers()
@@ -79,6 +81,11 @@ public class QuizQuestion
 	public void setTime(int time)
 	{
 		this.time = time;
+	}
+
+	public int getCountdown()
+	{
+		return countdown;
 	}
 
 	public int rightAnswer()
